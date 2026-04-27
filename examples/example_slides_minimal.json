@@ -1,0 +1,29 @@
+{
+    "title": "Python 入门课程",
+    "theme": "light",
+    "template": "minimal",
+    "slides": [
+        {
+            "title": "欢迎来到 Python 入门课",
+            "subtitle": "从零开始学习编程",
+            "content": "这是一门专为初学者设计的 Python 课程。",
+            "script": "大家好，欢迎来到 Python 入门课程。在这门课中，我们将从零开始，一步步学习 Python 编程。"
+        },
+        {
+            "title": "什么是 Python？",
+            "content": [
+                "Python 是一门高级编程语言",
+                "由 Guido van Rossum 于 1991 年创建",
+                "语法简洁优雅，易于学习",
+                "应用领域广泛：Web、数据科学、AI 等"
+            ],
+            "script": "首先我们来了解一下，什么是 Python。Python 是一门高级编程语言，由 Guido van Rossum 在 1991 年创建。它的特点是语法简洁优雅，非常容易学习，应用领域也非常广泛。"
+        },
+        {
+            "title": "第一个程序：Hello World",
+            "subtitle": "让我们开始写代码吧",
+            "content": "print(\"Hello, World!\")",
+            "script": "现在让我们来写第一个程序。在 Python 中，打印 Hello World 非常简单，只需要一行代码：print('Hello, World!')"
+        }
+    ]
+}
