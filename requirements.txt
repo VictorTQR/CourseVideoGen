@@ -1,0 +1,10 @@
+moviepy<2.0
+Pillow>=10.0.0
+numpy>=1.24.0
+python-pptx>=0.6.21
+edge-tts>=6.1.0
+mutagen>=1.47.0
+# Windows 平台可选，用于完美渲染 PPT:
+# pywin32>=306
+# HTML 幻灯片支持（可选）:
+# playwright>=1.40
