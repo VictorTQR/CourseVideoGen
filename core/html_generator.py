@@ -387,6 +387,16 @@ class HTMLSlideGenerator:
         
         # 检查自定义模板
         if os.path.exists(self.templates_dir):
+            # 优先检查子目录结构（新结构）
+            for filename in os.listdir(self.templates_dir):
+                dir_path = os.path.join(self.templates_dir, filename)
+                if os.path.isdir(dir_path):
+                    if os.path.exists(os.path.join(dir_path, "template.html")):
+                        if filename not in templates:
+                            templates.append(filename)
+                    continue
+            
+            # 向后兼容：检查旧的文件结构
             for filename in os.listdir(self.templates_dir):
                 if filename.endswith(".html") and not filename.startswith("_"):
                     template_name = filename[:-5]  # 去掉 .html
@@ -410,23 +420,46 @@ class HTMLSlideGenerator:
                 TEMPLATE_CONFIGS.get(template_name, TEMPLATE_CONFIGS["default"])
             )
         
-        # 检查自定义模板
-        custom_template_path = os.path.join(self.templates_dir, f"{template_name}.html")
-        custom_slide_template_path = os.path.join(self.templates_dir, f"_{template_name}_slide.html")
-        custom_config_path = os.path.join(self.templates_dir, f"{template_name}.json")
+        # 优先尝试新的目录结构
+        template_dir = os.path.join(self.templates_dir, template_name)
+        if os.path.isdir(template_dir):
+            template_path = os.path.join(template_dir, "template.html")
+            if os.path.exists(template_path):
+                with open(template_path, "r", encoding="utf-8") as f:
+                    html_template = f.read()
+                
+                # 加载单页模板
+                slide_template = SLIDE_TEMPLATES["default"]
+                slide_path = os.path.join(template_dir, "slide.html")
+                if os.path.exists(slide_path):
+                    with open(slide_path, "r", encoding="utf-8") as f:
+                        slide_template = f.read()
+                
+                # 加载配置
+                config = TEMPLATE_CONFIGS["default"]
+                config_path = os.path.join(template_dir, "config.json")
+                if os.path.exists(config_path):
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        config = json.load(f)
+                
+                return html_template, slide_template, config
         
+        # 向后兼容：检查旧的文件结构
+        custom_template_path = os.path.join(self.templates_dir, f"{template_name}.html")
         if os.path.exists(custom_template_path):
             with open(custom_template_path, "r", encoding="utf-8") as f:
                 html_template = f.read()
             
             # 加载单页模板
             slide_template = SLIDE_TEMPLATES["default"]
+            custom_slide_template_path = os.path.join(self.templates_dir, f"_{template_name}_slide.html")
             if os.path.exists(custom_slide_template_path):
                 with open(custom_slide_template_path, "r", encoding="utf-8") as f:
                     slide_template = f.read()
             
             # 加载配置
             config = TEMPLATE_CONFIGS["default"]
+            custom_config_path = os.path.join(self.templates_dir, f"{template_name}.json")
             if os.path.exists(custom_config_path):
                 with open(custom_config_path, "r", encoding="utf-8") as f:
                     config = json.load(f)
@@ -471,6 +504,22 @@ class HTMLSlideGenerator:
             "slides": slides_data
         }
         return self._generate_html(data, template_name)
+
+    def _copy_template_resources(self, template_name: str):
+        """复制模板目录下的资源文件到 HTML 目录"""
+        # 先尝试新的目录结构
+        template_dir = os.path.join(self.templates_dir, template_name)
+        if os.path.isdir(template_dir):
+            for filename in os.listdir(template_dir):
+                # 跳过模板文件本身，只复制资源文件
+                if filename in ["template.html", "slide.html", "config.json"]:
+                    continue
+                src_path = os.path.join(template_dir, filename)
+                if os.path.isfile(src_path):
+                    dst_path = os.path.join(self.html_dir, filename)
+                    import shutil
+                    shutil.copy2(src_path, dst_path)
+                    print(f"📦 复制资源文件: {filename}")
 
     def _generate_html(self, data: Dict, template_name: str = "default") -> str:
         """内部 HTML 生成逻辑 - 支持自定义模板"""
@@ -530,6 +579,9 @@ class HTMLSlideGenerator:
         output_path = os.path.join(self.html_dir, "slides.html")
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_content)
+        
+        # 复制模板资源文件
+        self._copy_template_resources(template_name)
 
         print(f"✅ HTML 幻灯片已生成 (模板: {template_name}): {output_path}")
         return output_path

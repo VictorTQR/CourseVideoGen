@@ -1,0 +1,31 @@
+{
+    "title": "化工原理课程",
+    "theme": "light",
+    "template": "chemistry",
+    "slides": [
+        {
+            "title": "化工原理",
+            "subtitle": "第一章 流体流动",
+            "content": "<h1>化工原理课程</h1><p>欢迎来到化工原理课堂，本课程将系统介绍化工过程中的基本原理和操作单元。</p><p>授课教师：化工系</p>",
+            "script": "大家好，欢迎来到化工原理课程。今天我们开始学习第一章，流体流动。"
+        },
+        {
+            "title": "化工原理",
+            "subtitle": "1.1 流体的基本性质",
+            "content": "<h2>流体的密度与粘度</h2><ul><li>密度：单位体积流体的质量</li><li>粘度：流体抵抗流动的性质</li><li>粘度随温度变化：液体粘度降低，气体粘度升高</li><li>牛顿粘性定律</li></ul>",
+            "script": "首先学习流体的基本性质，包括密度和粘度。密度是单位体积流体的质量，而粘度是流体抵抗流动的性质。"
+        },
+        {
+            "title": "化工原理",
+            "subtitle": "1.2 流体静力学",
+            "content": "<h2>流体静力学方程</h2><p>在静止流体中，压强随深度的变化关系：</p><p style=\"text-align:center;font-size:32px;font-family:Times New Roman;\">p = p₀ + ρgh</p><ul><li>p₀：液面压强</li><li>ρ：流体密度</li><li>h：深度</li></ul>",
+            "script": "接下来学习流体静力学。静力学方程描述了静止流体中压强随深度的变化规律。"
+        },
+        {
+            "title": "化工原理",
+            "subtitle": "本章小结",
+            "content": "<h2>本章重点内容</h2><ul><li>流体的基本性质：密度与粘度</li><li>流体静力学方程及应用</li><li>伯努利方程及其工程应用</li><li>管路阻力计算</li></ul><p style=\"margin-top:40px;color:#c55a11;font-weight:bold;text-align:center;\">下一章：流体输送机械</p>",
+            "script": "本章我们学习了流体的基本性质、静力学方程、伯努利方程以及管路阻力计算。下一章我们将学习流体输送机械。"
+        }
+    ]
+}
