@@ -58,8 +58,9 @@ class ProjectManager:
         slide = Slide(
             id=slide_id,
             image=image_filename,
-            script="",
-            duration=3.0
+            content="",
+            script=None,
+            duration=None
         )
         project.slides.append(slide)
         self._save_project(project)
@@ -72,6 +73,27 @@ class ProjectManager:
                 slide.script = script
                 self._save_project(project)
                 return
+
+    def update_slide_content(self, project: Project, slide_id: int, content: str):
+        """更新 content 字段（import 阶段用）"""
+        for slide in project.slides:
+            if slide.id == slide_id:
+                slide.content = content
+                self._save_project(project)
+                return
+
+    def apply_slide_script(self, project: Project, slide_id: int, script: str):
+        """应用讲解稿（script apply 阶段用）"""
+        for slide in project.slides:
+            if slide.id == slide_id:
+                slide.script = script
+                self._save_project(project)
+                return
+
+    def update_overview(self, project: Project, overview: dict):
+        """更新课程概览"""
+        project.overview = overview
+        self._save_project(project)
 
     def update_slide_audio(self, project: Project, slide_id: int, audio_filename: str, duration: float):
         """更新音频信息"""
