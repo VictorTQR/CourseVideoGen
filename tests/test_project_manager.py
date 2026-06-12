@@ -46,6 +46,12 @@ def test_update_slide_content_invalid_id(pm):
     with pytest.raises(ValueError, match="Slide 99 not found"):
         pm.update_slide_content(project, 99, "content")
 
+def test_update_slide_audio_invalid_id(pm):
+    project = pm.create_project("test")
+    pm.add_slide(project, "slide_01.png")
+    with pytest.raises(ValueError, match="Slide 99 not found"):
+        pm.update_slide_audio(project, 99, "audio.mp3", 5.0)
+
 def test_apply_slide_script_invalid_id(pm):
     project = pm.create_project("test")
     pm.add_slide(project, "slide_01.png")
