@@ -1,5 +1,7 @@
 import pytest
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from unittest.mock import patch, MagicMock
 from models.project import Project, Slide
 from core.script_generator import generate_overview, generate_scripts
@@ -83,19 +85,20 @@ def test_generate_scripts_retry_on_failure(sample_project, tmp_path):
     config = LLMConfig(api_key="x", base_url="y", model="z", temperature=0.7)
     sample_project.overview = {"course_summary": "test", "slide_overview": []}
 
-    call_count = 0
+    slide_idx = [-1]
+
     def mock_call(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-        if call_count == 1:
+        slide_idx[0] += 1
+        if slide_idx[0] == 0:
             raise Exception("API Error")
         return "成功"
 
     with patch("core.script_generator.call_llm", side_effect=mock_call):
         with patch("builtins.print") as mock_print:
-            generate_scripts(sample_project, config, str(tmp_path))
+            paths = generate_scripts(sample_project, config, str(tmp_path))
 
-            assert call_count == 2
+            assert len(paths) == 2
+            assert slide_idx[0] == 2
             mock_print.assert_any_call("[WARN] 第 1 页生成失败，重试中...")
 
 def test_generate_scripts_continues_on_failure(sample_project, tmp_path):
@@ -103,16 +106,18 @@ def test_generate_scripts_continues_on_failure(sample_project, tmp_path):
     config = LLMConfig(api_key="x", base_url="y", model="z", temperature=0.7)
     sample_project.overview = {"course_summary": "test", "slide_overview": []}
 
-    call_count = 0
+    slide1_attempts = [0]
+
     def mock_call(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-        if call_count == 2:
+        slide1_attempts[0] += 1
+        if slide1_attempts[0] <= 2:
             raise Exception("API Error")
-        return f"讲解稿第{call_count}页"
+        return "讲解稿"
 
     with patch("core.script_generator.call_llm", side_effect=mock_call):
-        paths = generate_scripts(sample_project, config, str(tmp_path))
+        with patch("builtins.print") as mock_print:
+            paths = generate_scripts(sample_project, config, str(tmp_path))
 
-        assert len(paths) == 1
-        assert "slide_02.txt" in os.path.basename(paths[0])
+            assert len(paths) == 1
+            assert "slide_02.txt" in os.path.basename(paths[0])
+            assert slide1_attempts[0] == 3

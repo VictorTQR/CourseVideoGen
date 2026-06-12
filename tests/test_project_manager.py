@@ -1,14 +1,9 @@
 import pytest
 import os
 import sys
-import tempfile
-import importlib.util
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-spec = importlib.util.spec_from_file_location("project_manager", "core/project_manager.py")
-pm_module = importlib.util.module_from_spec(spec)
-sys.modules['core.project_manager'] = pm_module
-spec.loader.exec_module(pm_module)
-ProjectManager = pm_module.ProjectManager
+from core.project_manager import ProjectManager
 
 @pytest.fixture
 def pm(tmp_path):

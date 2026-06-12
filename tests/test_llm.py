@@ -1,4 +1,7 @@
 import pytest
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from unittest.mock import patch, MagicMock
 from core.llm import LLMConfig, resolve_llm_config, extract_json, call_llm
 

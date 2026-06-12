@@ -11,3 +11,5 @@ wheels/
 
 workspace/**
 !workspace/README.md
+
+.env
