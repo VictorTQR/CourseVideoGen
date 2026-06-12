@@ -65,36 +65,34 @@ class CourseVideoGen:
         for image in images:
             self.pm.add_slide(self.current_project, image)
 
-        # 同时提取文本，保存到 scripts 目录作参考
+        # 提取文本，写入 slide.content
         slide_texts = parser.get_slide_text(pptx_path)
-        scripts_dir = os.path.join(self.project_dir, "scripts")
         for i, text in enumerate(slide_texts):
-            script_path = os.path.join(scripts_dir, f"slide_{i + 1:02d}.txt")
-            with open(script_path, "w", encoding="utf-8") as f:
-                f.write(text)
-            # 更新到 slide 的 script 字段
             if i < len(self.current_project.slides):
-                self.pm.update_slide_script(self.current_project, i + 1, text)
+                self.pm.update_slide_content(self.current_project, i + 1, text)
 
         print(f"[OK] 成功导入 {len(images)} 页")
 
     def import_html(self, html_path: str):
         """从 HTML 文件导入幻灯片（渲染为图片）"""
         if not self.current_project:
-            print("❌ 请先创建或加载项目")
+            print("[ERROR] 请先创建或加载项目")
             sys.exit(1)
 
         print(f"[IMPORT] 导入 HTML: {html_path}")
         renderer = HTMLSlideRenderer(self.project_dir)
 
-        # 渲染为图片
-        images = renderer.render_to_images(html_path)
+        # 渲染为图片（返回 Tuple）
+        results = renderer.render_to_images(html_path)
 
         # 添加到项目
-        for image in images:
-            self.pm.add_slide(self.current_project, image)
+        for image_filename, text_content in results:
+            self.pm.add_slide(self.current_project, image_filename)
+            # 更新 content
+            slide_id = len(self.current_project.slides)
+            self.pm.update_slide_content(self.current_project, slide_id, text_content)
 
-        print(f"[OK] 成功导入 {len(images)} 页")
+        print(f"[OK] 成功导入 {len(results)} 页")
 
     def generate_audio(self, voice: str = "zh-CN-XiaoxiaoNeural", rate: str = "+0%"):
         """生成所有幻灯片的音频"""
@@ -194,6 +192,21 @@ def main():
     gen_parser.add_argument("--project", help="项目名称")
     gen_parser.add_argument("--output", default="output.mp4", help="输出文件名")
 
+    # script
+    script_parser = subparsers.add_parser("script", help="script 相关命令")
+    script_subparsers = script_parser.add_subparsers(dest="script_command")
+
+    # script generate
+    gen_script_parser = script_subparsers.add_parser("generate", help="生成讲解稿")
+    gen_script_parser.add_argument("--model", help="LLM 模型")
+    gen_script_parser.add_argument("--base-url", help="API 基础地址")
+    gen_script_parser.add_argument("--api-key", help="API 密钥")
+    gen_script_parser.add_argument("--project", help="项目名称")
+
+    # script apply
+    apply_script_parser = script_subparsers.add_parser("apply", help="应用讲解稿")
+    apply_script_parser.add_argument("--project", help="项目名称")
+
     args = parser.parse_args()
 
     app = CourseVideoGen()
@@ -208,11 +221,12 @@ def main():
         app.load(args.name)
 
     elif args.command == "import-ppt":
-        app.load(args.file) if not app.current_project else None
-        # 需要先有项目
-        print("[ERROR] 请先使用 create 加载项目，再导入 PPT")
-        print('  python main.py create "项目名"')
-        print('  python main.py import-ppt "lesson.pptx"')
+        if not app.current_project:
+            print("[ERROR] 请先使用 create 加载项目，再导入 PPT")
+            print('  python main.py create "项目名"')
+            print('  python main.py import-ppt "lesson.pptx"')
+            sys.exit(1)
+        app.import_ppt(args.file)
 
     elif args.command == "import-html":
         app.import_html(args.file)
@@ -239,6 +253,48 @@ def main():
             app.generate_audio()
         else:
             app.generate_video(args.output)
+
+    elif args.command == "script":
+        if args.script_command is None:
+            script_parser.print_help()
+        elif args.script_command == "generate":
+            if args.project:
+                app.load(args.project)
+            if not app.current_project:
+                print("[ERROR] 请先创建或加载项目")
+                sys.exit(1)
+            from core.llm import resolve_llm_config
+            from core.script_generator import generate_overview, generate_scripts
+            llm_config = resolve_llm_config(
+                api_key=args.api_key,
+                base_url=args.base_url,
+                model=args.model
+            )
+            generate_overview(app.current_project, llm_config)
+            generate_scripts(app.current_project, llm_config, app.project_dir)
+            print("[OK] 讲解稿生成完成")
+        elif args.script_command == "apply":
+            if args.project:
+                app.load(args.project)
+            if not app.current_project:
+                print("[ERROR] 请先创建或加载项目")
+                sys.exit(1)
+            scripts_dir = os.path.join(app.project_dir, "scripts")
+            if not os.path.exists(scripts_dir):
+                print("[ERROR] scripts 目录不存在，请先运行 script generate")
+                sys.exit(1)
+            import glob
+            txt_files = sorted(glob.glob(os.path.join(scripts_dir, "slide_*.txt")))
+            applied = 0
+            for txt_path in txt_files:
+                basename = os.path.basename(txt_path)
+                # slide_01.txt -> 1
+                slide_id = int(basename.split("_")[1].split(".")[0])
+                with open(txt_path, "r", encoding="utf-8") as f:
+                    script = f.read()
+                app.pm.apply_slide_script(app.current_project, slide_id, script)
+                applied += 1
+            print(f"[OK] 成功应用 {applied} 页讲解稿")
 
     else:
         parser.print_help()
