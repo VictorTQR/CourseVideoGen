@@ -30,9 +30,9 @@ SCRIPT_SYSTEM_PROMPT = """你是一名教学视频讲解稿撰写助手。
 
 要求：
 1. 语言口语化，自然流畅，像在给学生讲课
-2. 长度适中，一段话即可（约100-300字）
-3. 可以适当使用"上一页我们讲了..."、"接下来..."等衔接语
-4. 不要使用"大家好"等开场白（除非是第1页）
+2. 专注于讲解当前页的内容，不要回顾上一页或预告下一页
+3. 长度适中，一段话即可（约100-300字）
+4. 第 1 页用简短开场引入课程主题，最后一页用简短总结收尾
 5. 直接输出讲解稿文本，不要加标题或格式标记"""
 
 def generate_overview(project: Project, config: LLMConfig) -> Dict:
@@ -68,7 +68,14 @@ def generate_scripts(project: Project, config: LLMConfig, project_dir: str) -> D
     scripts_map = {}
 
     for slide in project.slides:
-        user_text = f"课程名称：{project.name}\n幻灯片内容：\n{slide.content}"
+        total = len(project.slides)
+        user_text = f"课程名称：{project.name}\n"
+        user_text += f"当前：第 {slide.id} 页 / 共 {total} 页\n"
+        if slide.id == 1:
+            user_text += "这是课程的第一页，请用开场引入。\n"
+        elif slide.id == total:
+            user_text += "这是课程的最后一页，请用总结收尾。\n"
+        user_text += f"\n当前页内容：\n{slide.content}"
         script = None
         for attempt in range(2):
             try:
