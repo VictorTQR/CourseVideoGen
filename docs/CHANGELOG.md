@@ -7,6 +7,17 @@
 
 ## [未发布]
 
+### 新增
+- 新增五阶段完整工作流：`create` → `import` → `script generate` → `generate-audio` → `generate-video`
+- 新增 `core/llm.py` 模块：LLM 配置与调用，支持 OpenAI 兼容 API
+- 新增 `core/script_generator.py` 模块：自动生成课程讲解稿和概览
+- 新增 `script generate` 命令：调用 LLM 生成讲解稿
+- 新增 `script apply` 命令：将 scripts/*.txt 回写 project.json
+
+### 变更
+- `project.json` 新增 `content`（幻灯片文本）、`overview`（课程概览）字段
+- `Slide` 数据模型新增 `content` 字段
+
 ### 移除
 - 移除 HTML 幻灯片生成能力（JSON → HTML），由上游 CoursePPTGen 负责
 - 移除 `HTMLSlideGenerator` 类和 `BUILTIN_TEMPLATES` 内置模板

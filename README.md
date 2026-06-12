@@ -25,6 +25,34 @@ pip install -r requirements.txt
 
 ### 2. 使用流程
 
+#### 完整工作流（五阶段）
+
+```
+create          → project.json (空壳)
+import          → slides/*.png, project.json { id, image, content }
+script generate → scripts/*.txt + 自动回写 project.json { script, overview }
+script apply    → project.json { script } (可选)
+generate-audio  → audios/*.mp3, project.json { audio, duration }
+generate-video  → output.mp4
+```
+
+```bash
+# 1. 创建项目
+python main.py create "我的第一节课"
+
+# 2. 导入幻灯片（PPTX 或 HTML）
+python main.py import-ppt "lesson.pptx"
+# 或
+python main.py import-html "slides.html"
+
+# 3. 自动生成讲解稿（需要 LLM API）
+python main.py script generate --api-key "your-api-key"
+
+# 4. 生成音频和视频
+python main.py generate-audio
+python main.py generate-video
+```
+
 #### 方式一：导入 PPTX
 
 ```bash
@@ -35,11 +63,9 @@ python main.py create "我的第一节课"
 python main.py create "我的第一节课"
 python main.py import-ppt "lesson.pptx"
 
-# (可选) 编辑讲解稿
-# 编辑 workspace/我的第一节课/scripts/slide_01.txt 等
-
 # 生成音频和视频
-python main.py run-all
+python main.py generate-audio
+python main.py generate-video
 ```
 
 #### 方式二：导入 HTML 幻灯片
@@ -51,11 +77,9 @@ python main.py run-all
 python main.py create "HTML 演示"
 python main.py import-html "slides.html"
 
-# 3. (可选) 编辑讲解稿
-# 编辑 workspace/HTML演示/scripts/slide_01.txt 等
-
-# 4. 生成音频和视频
-python main.py run-all
+# 3. 生成音频和视频
+python main.py generate-audio
+python main.py generate-video
 ```
 
 ## 项目结构
@@ -108,6 +132,8 @@ CourseVideoGen/
 |-----|-----|
 | `import-ppt <file>` | 导入 PPTX 文件（渲染为图片） |
 | `import-html <file>` | 导入 HTML 幻灯片文件（Playwright 截图为图片） |
+| `script generate [--model] [--base-url] [--api-key] [--project]` | 调用 LLM 自动生成讲解稿和课程概览 |
+| `script apply [--project]` | 将已编辑的讲解稿同步回 project.json |
 | `generate-audio` | 为每页讲解稿生成语音 |
 | `generate-video` | 将图片+音频合成视频 |
 | `run-all` | 一键生成音频和视频 |

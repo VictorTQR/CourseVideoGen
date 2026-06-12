@@ -11,6 +11,8 @@ CourseVideoGen/
 │   ├── project_manager.py  # 项目管理
 │   ├── ppt_parser.py       # PPT 解析
 │   ├── html_generator.py   # HTML 渲染为图片
+│   ├── llm.py              # LLM 配置与调用
+│   ├── script_generator.py  # 讲解稿自动生成
 │   ├── audio_generator.py  # 音频生成
 │   └── video_generator.py  # 视频合成
 ├── models/                  # 数据模型
@@ -32,6 +34,8 @@ CourseVideoGen/
 | `load <name>` | 加载已有项目 |
 | `import-ppt <file>` | 导入 PPTX 文件 |
 | `import-html <file>` | 导入 HTML 幻灯片文件（Playwright 截图） |
+| `script generate [--model] [--base-url] [--api-key] [--project]` | 调用 LLM 自动生成讲解稿 |
+| `script apply [--project]` | 将 scripts/*.txt 回写 project.json |
 | `generate-audio` | 生成音频 |
 | `generate-video` | 生成视频 |
 | `run-all` | 一键生成（音频+视频） |
@@ -88,6 +92,57 @@ class HTMLSlideRenderer:
 ```
 
 **依赖：** 需要安装 `playwright` 并执行 `playwright install chromium`。
+
+### core/llm.py - LLM 配置与调用
+
+提供 LLM 调用功能，支持 OpenAI 兼容 API。
+
+**主要函数：**
+
+```python
+@dataclass(frozen=True)
+class LLMConfig:
+    api_key: str
+    base_url: str
+    model: str
+    temperature: float
+
+def resolve_llm_config(
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    model: Optional[str] = None,
+    temperature: Optional[float] = None,
+) -> LLMConfig
+
+def extract_json(text: str) -> dict
+def call_llm(system_prompt: str, user_text: str, config: LLMConfig) -> str
+```
+
+**配置优先级：** CLI 参数 > 环境变量 > 默认值
+
+| 环境变量 | 说明 |
+|---------|------|
+| `OPENAI_API_KEY` | API 密钥（必填） |
+| `OPENAI_BASE_URL` | API 地址（默认：https://open.bigmodel.cn/api/paas/v4） |
+| `CVG_MODEL` | 模型名称（默认：glm-4-flash） |
+
+**安装：** `pip install coursevideogen[llm]`
+
+### core/script_generator.py - 讲解稿自动生成
+
+调用 LLM 自动生成课程讲解稿和概览。
+
+**主要函数：**
+
+```python
+def generate_overview(project: Project, config: LLMConfig) -> Dict
+def generate_scripts(project: Project, config: LLMConfig, project_dir: str) -> List[str]
+```
+
+**工作流程：**
+
+1. `generate_overview` - 读取所有幻灯片内容，生成结构化课程概览（写入 `project.overview`）
+2. `generate_scripts` - 逐页生成口语化讲解稿，写入 `scripts/slide_XX.txt` 并回写 `slide.script`
 
 ### core/audio_generator.py - 音频生成
 
