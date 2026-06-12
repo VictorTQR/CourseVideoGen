@@ -1,7 +1,5 @@
 # 安装指南
 
-本文档介绍如何安装和配置 CourseVideoGen。
-
 ## 环境要求
 
 - Python 3.12 或更高版本
@@ -16,52 +14,36 @@ git clone <repository-url>
 cd CourseVideoGen
 ```
 
-### 2. 创建虚拟环境（推荐）
+### 2. 安装依赖
 
-使用 Python venv：
-
-```bash
-python -m venv .venv
-```
-
-激活虚拟环境：
-
-**Windows:**
-```bash
-.venv\Scripts\activate
-```
-
-**macOS/Linux:**
-```bash
-source .venv/bin/activate
-```
-
-### 3. 安装依赖
-
-使用 pip 安装：
-
-```bash
-pip install -r requirements.txt
-```
-
-或者使用 uv（推荐，更快）：
+使用 uv（推荐）：
 
 ```bash
 uv sync
+```
+
+或使用 pip：
+
+```bash
+pip install -r requirements.txt
 ```
 
 ## 依赖说明
 
 ### 必需依赖
 
-| 包名 | 版本要求 | 说明 |
-|------|----------|------|
-| moviepy | <2.0 | 视频合成（2.x API 不兼容） |
-| Pillow | >=10.0.0 | 图像处理 |
-| numpy | >=1.24.0 | 数值计算 |
-| python-pptx | >=0.6.21 | PPTX 文本提取 |
-| edge-tts | >=6.1.0 | 微软语音合成 |
-| mutagen | >=1.47.0 | 音频元数据读取 |
+| 包名 | 说明 |
+|------|------|
+| moviepy<2.0 | 视频合成（2.x API 不兼容） |
+| Pillow | 图像处理 |
+| numpy | 数值计算 |
+| python-pptx | PPTX 文本提取 |
+| edge-tts | 微软语音合成 |
+| mutagen | 音频元数据读取 |
+| typer | CLI 框架 |
+| loguru | 日志 |
+| python-dotenv | 环境变量加载 |
+| openai | LLM 调用（讲解稿生成） |
 
 ### 可选依赖
 
@@ -83,47 +65,48 @@ playwright install chromium
 
 ## 验证安装
 
-运行以下命令验证安装：
-
 ```bash
-python main.py --help
+cvg --help
 ```
 
-应该看到命令行帮助信息。
+## LLM 配置
 
-## 常见安装问题
+讲解稿生成需要 LLM API，默认使用智谱 GLM-4-Flash。
+
+**方式一：环境变量**
+
+```bash
+# .env 文件或 shell
+OPENAI_API_KEY="your-key"
+OPENAI_BASE_URL="https://open.bigmodel.cn/api/paas/v4"
+CVG_MODEL="glm-4-flash"
+```
+
+**方式二：命令行参数**
+
+```bash
+cvg script generate -p "课" --api-key "your-key" --model "glm-4-flash"
+```
+
+优先级：CLI 参数 > 环境变量 > 默认值
+
+## 常见问题
 
 ### Q: moviepy 安装失败？
 
-A: 确保安装的是 1.x 版本，requirements.txt 中已指定 `moviepy<2.0`。
-
-### Q: Windows 下 pywin32 安装问题？
-
-A: 使用以下命令安装：
-
-```bash
-pip install pywin32
-```
+确保安装的是 1.x 版本，已指定 `moviepy<2.0`。
 
 ### Q: Playwright 截图报错？
-
-A: 需要同时安装浏览器：
 
 ```bash
 pip install playwright
 playwright install chromium
 ```
 
-### Q: 如何使用 uv 替代 pip？
+### Q: script generate 报错缺少 openai 包？
 
-A: 如果已安装 uv，可以直接运行：
-
-```bash
-uv sync
-```
-
-这会根据 pyproject.toml 安装所有依赖。
+openai 已包含在必需依赖中。如果使用虚拟环境，确保在正确的环境中安装。
 
 ## 下一步
 
-安装完成后，请查看 [README.md](../README.md) 了解如何使用 CourseVideoGen。
+查看 [README.md](../README.md) 了解使用方法。

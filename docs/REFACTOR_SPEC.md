@@ -115,57 +115,83 @@ CLI 参数设计（在 main.py 中暴露）：
 
 **注意**：LLM 相关依赖（openai 等）应为可选依赖，不在核心依赖中。未安装时给出提示。
 
-### 4.8 main.py
+### 4.8 main.py — 架构变更：移除进程内状态
+
+**核心改动：删除 `self.current_project` 和 `self.project_dir`，所有命令通过 `--project` 参数指定项目，每次命令独立加载。**
+
+之前的设计是 create/load 后在进程内持有状态，后续命令依赖这个状态。但 CLI 每次调用都是独立进程，状态无法跨命令保留，导致 import-ppt/import-html 必须和 create 在同一次调用中执行，否则报错。这是 bug。
+
+**移除：**
+- `CourseVideoGen.current_project` 属性
+- `CourseVideoGen.project_dir` 属性
+- `CourseVideoGen.load()` 方法
+- `load` CLI 命令（`main.py list` 已能查看项目列表）
+
+**统一模式：**
+所有需要项目上下文的命令都接收 `--project` 参数，内部统一走 `_require_project(project_name)` 加载：
+
+```python
+def _require_project(self, project_name: str) -> tuple:
+    """加载项目，返回 (project, project_dir)。项目不存在则报错退出。"""
+    project = self.pm.load_project(project_name)
+    if not project:
+        print(f"[ERROR] 项目不存在: {project_name}")
+        print('  使用 python main.py create "项目名" 创建')
+        sys.exit(1)
+    project_dir = self.pm.get_project_path(project_name)
+    return project, project_dir
+```
+
+每个命令方法改为接收 `project_name` 参数，内部调用 `_require_project`：
+
+```python
+# 之前
+def import_ppt(self, pptx_path: str):
+    if not self.current_project:
+        print("[ERROR] 请先创建或加载项目")
+        sys.exit(1)
+    parser = PPTParser(self.project_dir)
+    ...
+
+# 之后
+def import_ppt(self, pptx_path: str, project_name: str):
+    project, project_dir = self._require_project(project_name)
+    parser = PPTParser(project_dir)
+    ...
+```
 
 CLI 命令结构变更：
 
 ```
 之前：
-  create, load, list
-  import-ppt, import-html
-  generate-audio, generate-video, run-all
+  create <name>, load <name>, list
+  import-ppt <file>            ← 需要 create/load 后进程内状态
+  import-html <file>           ← 同上
+  generate-audio --project     ← 有 --project
+  generate-video --project     ← 有 --project
+  run-all --project            ← 有 --project
 
 之后：
-  create, load, list
-  import-ppt, import-html
-  script generate     ← 新增：LLM 生成讲解稿到 txt
-  script apply        ← 新增：从 txt 回写到 project.json
-  generate-audio, generate-video, run-all
+  create <name>, list
+  import-ppt <file> --project <名>    ← 新增 --project
+  import-html <file> --project <名>   ← 新增 --project
+  script generate --project <名>      ← 有 --project
+  script apply --project <名>         ← 有 --project
+  generate-audio --project <名>       ← 不变
+  generate-video --project <名>       ← 不变
+  run-all --project <名>              ← 不变
 ```
 
-具体改动：
+所有需要项目的命令统一模式：
+```python
+elif args.command == "xxx":
+    if not args.project:
+        print("[ERROR] 请使用 --project 指定项目")
+        sys.exit(1)
+    app.xxx(..., args.project)
+```
 
-**import-ppt：**
-- `parser.get_slide_text()` 返回的文本写入 `slide.content`（之前写入 slide.script）
-- 删除写入 `scripts/*.txt` 的逻辑（scripts/ 目录现在由 script generate 命令管理）
-
-**import-html：**
-- `HTMLSlideRenderer` 返回图片和文本内容
-- 文本内容写入 `slide.content`
-
-**script generate：**
-- 调用 `core/script_generator.py` 的逻辑
-- 读取 project.json 中的 content，调用 LLM，写入 scripts/*.txt
-- **生成完成后自动执行 apply 逻辑**：读取 txt 内容，写入 project.json 的 slide.script
-- 打印完成提示，告知用户：如需修改讲解稿请编辑 scripts/*.txt，修改后执行 `script apply`
-
-**script apply：**
-- 遍历 `scripts/` 目录，按文件名匹配 slide ID
-- 读取 txt 内容，写入 `slide.script`（调用 `ProjectManager.apply_slide_script()`）
-- 打印结果：成功 N 页，跳过 M 页（无文件）
-- 这是可选命令，仅在用户编辑了 txt 后手动执行
-
-**generate-audio：**
-- 检查 `slide.script` 是否有值（之前检查 `slide.script`，语义变了但现在字段名兼容）
-- 从 `slide.script` 读取文本传入 AudioGenerator
-- 跳过 `slide.script` 为 None 的页面
-
-**generate-video：**
-- 不改动，继续读 slide.image / slide.audio / slide.duration
-
-**run-all：**
-- 仍然是 generate-audio + generate-video 的快捷方式
-- 不包含 script 相关步骤（因为用户可能需要先审核 txt）
+`create` 和 `list` 不需要项目，不动。
 
 ## 5. 项目工作目录结构
 

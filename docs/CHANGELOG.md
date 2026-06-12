@@ -8,15 +8,23 @@
 ## [未发布]
 
 ### 新增
-- 新增五阶段完整工作流：`create` → `import` → `script generate` → `generate-audio` → `generate-video`
-- 新增 `core/llm.py` 模块：LLM 配置与调用，支持 OpenAI 兼容 API
-- 新增 `core/script_generator.py` 模块：自动生成课程讲解稿和概览
-- 新增 `script generate` 命令：调用 LLM 生成讲解稿
-- 新增 `script apply` 命令：将 scripts/*.txt 回写 project.json
+- 新增 `core/llm.py` — LLM 配置解析、调用、JSON 提取（参考 CourseDocGen 四步法）
+- 新增 `core/script_generator.py` — 两阶段讲解稿生成（课程概览 → 逐页讲稿）
+- 新增 `script generate` 命令 — LLM 自动生成讲解稿，生成后自动回写 project.json
+- 新增 `script apply` 命令 — 将编辑后的 scripts/*.txt 回写到 project.json
+- 新增 `update_slide_content()` / `apply_slide_script()` / `update_overview()` 方法
+- HTML 渲染器返回文本内容（`render_to_images` 返回 `List[Tuple[str, str]]`）
+- Slide 新增 `content` 字段（PPT/HTML 原始内容），`overview` 字段（课程概览）
 
 ### 变更
-- `project.json` 新增 `content`（幻灯片文本）、`overview`（课程概览）字段
-- `Slide` 数据模型新增 `content` 字段
+- Slide 字段语义变更：`script` 从"PPT文本"改为"LLM生成的讲解稿"，默认值 `""` → `None`
+- Slide 字段语义变更：`duration` 默认值 `3.0` → `None`，只在 generate-audio 阶段写入真实值
+- CLI 从 argparse 迁移到 Typer + loguru
+- 移除进程内状态（`current_project` / `project_dir`），所有命令通过 `--project` 指定项目
+- 移除 `load` 命令，`list` 命令返回完整项目信息
+- `import-ppt` 提取文本写入 `slide.content`（之前写入 `slide.script`）
+- 音频时长保底值从 `3.0` 改为 `1.0`
+- video_generator duration 为 None 时抛异常（不再静默使用默认值）
 
 ### 移除
 - 移除 HTML 幻灯片生成能力（JSON → HTML），由上游 CoursePPTGen 负责
@@ -25,15 +33,10 @@
 - 移除 `examples/` 目录（示例 JSON 文件）
 - 移除 `import-html` 的 JSON 导入模式、`--template` / `--theme` 选项
 - 移除 `list-templates` 命令
-- 移除 `tests/test_template.py`
+- 移除 `generate` 快捷命令
 
-### 新增
-- `import-html` 改为直接接收 HTML 文件（Playwright 截图渲染）
-- 创建 docs 目录，整理项目文档
-
-### 变更
-- `core/html_generator.py` 精简为仅包含 `HTMLSlideRenderer`
-- 项目定位明确为下游工具：接收图片（来自 PPTX/HTML）→ TTS → 视频
+### 修复
+- 修复 `list` 命令 TypeError：`list_projects()` 返回字符串列表但按字典访问
 
 ## [0.1.1] - 2026-04-27
 
