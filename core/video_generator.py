@@ -107,9 +107,11 @@ class VideoGenerator:
             if not os.path.exists(image_path):
                 continue
 
-            # 确保使用正确的时长
+            if slide.duration is None:
+                raise ValueError(f"第 {slide.id} 页的 duration 未设置，请先运行 generate-audio")
+
             duration = slide.duration
-            if slide.audio and abs(duration - 3.0) < 0.1:  # 如果还是默认的3秒左右
+            if slide.audio:
                 audio_path = os.path.join(self.audios_dir, slide.audio)
                 if os.path.exists(audio_path):
                     try:

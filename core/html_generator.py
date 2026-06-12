@@ -4,7 +4,7 @@ HTML 幻灯片渲染模块 - 使用 Playwright 将 HTML 转为图片
 注意：HTML 生成由 CoursePPTGen 项目负责，本项目只负责渲染截图。
 """
 import os
-from typing import List
+from typing import List, Tuple
 
 
 class HTMLSlideRenderer:
@@ -15,7 +15,7 @@ class HTMLSlideRenderer:
         self.html_dir = os.path.join(project_dir, "html")
         self.slides_dir = os.path.join(project_dir, "slides")
 
-    def render_to_images(self, html_path: str) -> List[str]:
+    def render_to_images(self, html_path: str) -> List[Tuple[str, str]]:
         """
         将 HTML 幻灯片渲染为图片序列
         """
@@ -28,7 +28,7 @@ class HTMLSlideRenderer:
 
         print("🔄 使用 Playwright 渲染 HTML 幻灯片...")
 
-        images = []
+        images_and_texts = []
         html_file = f"file://{os.path.abspath(html_path)}"
 
         try:
@@ -57,16 +57,18 @@ class HTMLSlideRenderer:
                     slide_elem = page.query_selector(f"#slide-{i}")
                     if slide_elem:
                         slide_elem.screenshot(path=filepath)
+                        texts = slide_elem.text_content() or ""
                     else:
                         page.screenshot(path=filepath)
+                        texts = page.evaluate("() => document.body.textContent") or ""
 
-                    images.append(filename)
+                    images_and_texts.append((filename, texts.strip()))
                     print(f"   第 {i}/{slide_count} 页: {filename}")
 
                 browser.close()
 
-            print(f"✅ HTML 渲染完成: {len(images)} 页")
-            return images
+            print(f"✅ HTML 渲染完成: {len(images_and_texts)} 页")
+            return images_and_texts
 
         except Exception as e:
             print(f"❌ Playwright 渲染失败: {e}")
