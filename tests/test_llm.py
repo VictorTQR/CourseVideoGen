@@ -61,7 +61,7 @@ def test_call_llm_success():
     mock_response = MagicMock()
     mock_response.choices = [MagicMock(message=MagicMock(content="LLM response text"))]
 
-    with patch("core.llm.OpenAI") as MockOpenAI:
+    with patch("openai.OpenAI") as MockOpenAI:
         mock_client = MagicMock()
         MockOpenAI.return_value = mock_client
         mock_client.chat.completions.create.return_value = mock_response
@@ -75,6 +75,14 @@ def test_call_llm_success():
 def test_call_llm_import_error():
     config = LLMConfig(api_key="test", base_url="x", model="y", temperature=0.7)
 
-    with patch("core.llm.OpenAI", side_effect=ImportError("No module named 'openai'")):
+    import builtins
+    original_import = builtins.__import__
+
+    def mock_import(name, *args, **kwargs):
+        if name == "openai" or name.startswith("openai."):
+            raise ImportError("No module named 'openai'")
+        return original_import(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=mock_import):
         with pytest.raises(ImportError, match="pip install coursevideogen\\[llm\\]"):
             call_llm("system", "user", config)

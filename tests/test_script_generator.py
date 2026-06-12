@@ -18,7 +18,7 @@ def sample_project():
     )
 
 def test_generate_overview_returns_dict(sample_project):
-    """测试 generate_overview 返回 dict 并写入 project.overview"""
+    """测试 generate_overview 返回 dict，不修改 project"""
     config = LLMConfig(api_key="x", base_url="y", model="z", temperature=0.7)
     mock_response = '{"course_summary": "test", "target_audience": "beginners", "tone": "easy", "slide_overview": []}'
 
@@ -26,7 +26,7 @@ def test_generate_overview_returns_dict(sample_project):
         overview = generate_overview(sample_project, config)
 
         assert "course_summary" in overview
-        assert sample_project.overview == overview
+        assert overview["course_summary"] == "test"
 
 def test_generate_overview_calls_llm_with_all_slides(sample_project):
     """测试 generate_overview 将所有 slide content 发送给 LLM"""
@@ -44,16 +44,17 @@ def test_generate_overview_calls_llm_with_all_slides(sample_project):
         assert "Python 简介" in user_text
 
 def test_generate_scripts_returns_file_paths(sample_project, tmp_path):
-    """测试 generate_scripts 返回文件路径列表"""
+    """测试 generate_scripts 返回 {slide_id: script_text} dict"""
     config = LLMConfig(api_key="x", base_url="y", model="z", temperature=0.7)
     sample_project.overview = {"course_summary": "test", "slide_overview": []}
 
     with patch("core.script_generator.call_llm", return_value="这是一段讲解稿"):
-        paths = generate_scripts(sample_project, config, str(tmp_path))
+        scripts_map = generate_scripts(sample_project, config, str(tmp_path))
 
-        assert len(paths) == 2
-        assert "slide_01.txt" in os.path.basename(paths[0])
-        assert "slide_02.txt" in os.path.basename(paths[1])
+        assert isinstance(scripts_map, dict)
+        assert len(scripts_map) == 2
+        assert scripts_map[1] == "这是一段讲解稿"
+        assert scripts_map[2] == "这是一段讲解稿"
 
 def test_generate_scripts_writes_to_files(sample_project, tmp_path):
     """测试 generate_scripts 正确写入 txt 文件"""
@@ -69,16 +70,18 @@ def test_generate_scripts_writes_to_files(sample_project, tmp_path):
             with open(filepath, encoding="utf-8") as f:
                 assert f.read() == "口语化讲解稿内容"
 
-def test_generate_scripts_updates_slide_script(sample_project, tmp_path):
-    """测试 generate_scripts 自动回写 slide.script"""
+def test_generate_scripts_returns_dict_not_modifying_project(sample_project, tmp_path):
+    """测试 generate_scripts 返回 dict，不直接修改 slide.script"""
     config = LLMConfig(api_key="x", base_url="y", model="z", temperature=0.7)
     sample_project.overview = {"course_summary": "test", "slide_overview": []}
 
     with patch("core.script_generator.call_llm", return_value="讲解稿文本"):
-        generate_scripts(sample_project, config, str(tmp_path))
+        scripts_map = generate_scripts(sample_project, config, str(tmp_path))
 
-        assert sample_project.slides[0].script == "讲解稿文本"
-        assert sample_project.slides[1].script == "讲解稿文本"
+        assert scripts_map[1] == "讲解稿文本"
+        assert scripts_map[2] == "讲解稿文本"
+        assert sample_project.slides[0].script is None
+        assert sample_project.slides[1].script is None
 
 def test_generate_scripts_retry_on_failure(sample_project, tmp_path):
     """测试 generate_scripts 失败时重试一次"""
@@ -95,9 +98,11 @@ def test_generate_scripts_retry_on_failure(sample_project, tmp_path):
 
     with patch("core.script_generator.call_llm", side_effect=mock_call):
         with patch("builtins.print") as mock_print:
-            paths = generate_scripts(sample_project, config, str(tmp_path))
+            scripts_map = generate_scripts(sample_project, config, str(tmp_path))
 
-            assert len(paths) == 2
+            assert len(scripts_map) == 2
+            assert scripts_map[1] == "成功"
+            assert scripts_map[2] == "成功"
             assert slide_idx[0] == 2
             mock_print.assert_any_call("[WARN] 第 1 页生成失败，重试中...")
 
@@ -116,8 +121,8 @@ def test_generate_scripts_continues_on_failure(sample_project, tmp_path):
 
     with patch("core.script_generator.call_llm", side_effect=mock_call):
         with patch("builtins.print") as mock_print:
-            paths = generate_scripts(sample_project, config, str(tmp_path))
+            scripts_map = generate_scripts(sample_project, config, str(tmp_path))
 
-            assert len(paths) == 1
-            assert "slide_02.txt" in os.path.basename(paths[0])
+            assert len(scripts_map) == 1
+            assert scripts_map[2] == "讲解稿"
             assert slide1_attempts[0] == 3
