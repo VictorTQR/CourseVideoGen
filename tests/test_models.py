@@ -38,3 +38,16 @@ def test_from_dict_migration_new_format():
     project = Project.from_dict(data)
     assert project.slides[0].content == "raw"
     assert project.slides[0].script == "oral"
+
+def test_project_round_trip():
+    """测试 to_dict -> from_dict 往返"""
+    project = Project(
+        name="Test",
+        slides=[Slide(id=1, image="a.png", content="Hi")],
+        overview={"course_summary": "test", "slide_overview": []}
+    )
+    restored = Project.from_dict(project.to_dict())
+    assert restored.name == project.name
+    assert restored.slides[0].content == project.slides[0].content
+    assert restored.slides[0].script is None
+    assert restored.overview == project.overview

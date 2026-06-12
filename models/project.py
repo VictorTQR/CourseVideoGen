@@ -42,6 +42,7 @@ class Project:
     def from_dict(cls, data: Dict) -> "Project":
         slides = []
         for s in data["slides"]:
+            s = dict(s)
             if "content" not in s and "script" in s:
                 s["content"] = s["script"]
                 s["script"] = None
