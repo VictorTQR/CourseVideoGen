@@ -66,14 +66,6 @@ class ProjectManager:
         self._save_project(project)
         return slide
 
-    def update_slide_script(self, project: Project, slide_id: int, script: str):
-        """更新讲解稿"""
-        for slide in project.slides:
-            if slide.id == slide_id:
-                slide.script = script
-                self._save_project(project)
-                return
-
     def update_slide_content(self, project: Project, slide_id: int, content: str):
         """更新 content 字段（import 阶段用）"""
         for slide in project.slides:
@@ -81,6 +73,7 @@ class ProjectManager:
                 slide.content = content
                 self._save_project(project)
                 return
+        raise ValueError(f"Slide {slide_id} not found")
 
     def apply_slide_script(self, project: Project, slide_id: int, script: str):
         """应用讲解稿（script apply 阶段用）"""
@@ -89,6 +82,7 @@ class ProjectManager:
                 slide.script = script
                 self._save_project(project)
                 return
+        raise ValueError(f"Slide {slide_id} not found")
 
     def update_overview(self, project: Project, overview: dict):
         """更新课程概览"""
@@ -103,6 +97,7 @@ class ProjectManager:
                 slide.duration = duration
                 self._save_project(project)
                 return
+        raise ValueError(f"Slide {slide_id} not found")
 
     def list_projects(self) -> list:
         """列出所有项目"""
