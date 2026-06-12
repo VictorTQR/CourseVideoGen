@@ -1,8 +1,8 @@
 import os
 import json
 from typing import Dict
-from models.project import Project, Slide
-from core.llm import LLMConfig, call_llm, extract_json
+from videogen.models.project import Project, Slide
+from videogen.core.llm import LLMConfig, call_llm, extract_json
 
 OVERVIEW_SYSTEM_PROMPT = """你是一名经验丰富的教学视频讲解稿策划助手。
 请根据用户提供的课程幻灯片内容，生成一份结构化的课程概览。

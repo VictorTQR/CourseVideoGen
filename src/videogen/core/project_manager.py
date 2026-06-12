@@ -6,7 +6,7 @@ import json
 import shutil
 from datetime import datetime
 from typing import Optional
-from models.project import Project, Slide
+from videogen.models.project import Project, Slide
 
 
 class ProjectManager:

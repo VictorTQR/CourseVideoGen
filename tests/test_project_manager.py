@@ -1,9 +1,9 @@
 import pytest
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
-from core.project_manager import ProjectManager
+from videogen.core.project_manager import ProjectManager
 
 @pytest.fixture
 def pm(tmp_path):

@@ -21,15 +21,13 @@ import typer
 
 load_dotenv()
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from core.project_manager import ProjectManager
-from core.ppt_parser import PPTParser
-from core.audio_generator import AudioGenerator
-from core.video_generator import VideoGenerator
-from core.html_generator import HTMLSlideRenderer
-from core.script_generator import generate_overview, generate_scripts
-from core.llm import resolve_llm_config
+from videogen.core.project_manager import ProjectManager
+from videogen.core.ppt_parser import PPTParser
+from videogen.core.audio_generator import AudioGenerator
+from videogen.core.video_generator import VideoGenerator
+from videogen.core.html_generator import HTMLSlideRenderer
+from videogen.core.script_generator import generate_overview, generate_scripts
+from videogen.core.llm import resolve_llm_config
 
 app = typer.Typer(
     name="videogen",

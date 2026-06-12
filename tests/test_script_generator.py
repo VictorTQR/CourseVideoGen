@@ -1,11 +1,11 @@
 import pytest
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 from unittest.mock import patch, MagicMock
-from models.project import Project, Slide
-from core.script_generator import generate_overview, generate_scripts
-from core.llm import LLMConfig
+from videogen.models.project import Project, Slide
+from videogen.core.script_generator import generate_overview, generate_scripts
+from videogen.core.llm import LLMConfig
 
 @pytest.fixture
 def sample_project():

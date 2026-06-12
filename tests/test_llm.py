@@ -1,9 +1,9 @@
 import pytest
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 from unittest.mock import patch, MagicMock
-from core.llm import LLMConfig, resolve_llm_config, extract_json, call_llm
+from videogen.core.llm import LLMConfig, resolve_llm_config, extract_json, call_llm
 
 def test_llm_config_frozen():
     config = LLMConfig(api_key="x", base_url="y", model="z", temperature=0.7)

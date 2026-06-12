@@ -1,9 +1,9 @@
 import pytest
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
-from core.html_generator import HTMLSlideRenderer
+from videogen.core.html_generator import HTMLSlideRenderer
 
 def test_render_returns_tuples(tmp_path):
     renderer = HTMLSlideRenderer(str(tmp_path))

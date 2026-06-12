@@ -1,9 +1,9 @@
 import pytest
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
-from models.project import Slide, Project
+from videogen.models.project import Slide, Project
 
 def test_slide_new_fields():
     slide = Slide(id=1, image="a.png")
