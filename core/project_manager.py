@@ -100,11 +100,14 @@ class ProjectManager:
         raise ValueError(f"Slide {slide_id} not found")
 
     def list_projects(self) -> list:
-        """列出所有项目"""
-        projects = []
+        """列出所有项目，返回项目摘要列表"""
+        result = []
         for name in os.listdir(self.base_dir):
             path = os.path.join(self.base_dir, name)
-            if os.path.isdir(path) and os.path.exists(os.path.join(path, "project.json")):
-                projects.append(name)
-        return sorted(projects)
+            json_path = os.path.join(path, "project.json")
+            if os.path.isdir(path) and os.path.exists(json_path):
+                with open(json_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                result.append(data)
+        return sorted(result, key=lambda x: x.get("name", ""))
 

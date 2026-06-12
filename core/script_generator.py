@@ -1,6 +1,6 @@
 import os
 import json
-from typing import List, Dict
+from typing import Dict
 from models.project import Project, Slide
 from core.llm import LLMConfig, call_llm, extract_json
 
@@ -39,7 +39,7 @@ def generate_overview(project: Project, config: LLMConfig) -> Dict:
     """Phase 1: 生成课程概览
 
     读取所有 slide.content，调用 LLM 生成结构化课程概览 JSON。
-    结果写入 project.overview 并保存。
+    返回 overview dict，由调用方负责持久化。
     """
     user_text = f"课程名称：{project.name}\n幻灯片内容：\n"
     for i, slide in enumerate(project.slides):
@@ -47,14 +47,14 @@ def generate_overview(project: Project, config: LLMConfig) -> Dict:
 
     response = call_llm(OVERVIEW_SYSTEM_PROMPT, user_text, config)
     overview = extract_json(response)
-    project.overview = overview
     return overview
 
-def generate_scripts(project: Project, config: LLMConfig, project_dir: str) -> List[str]:
+def generate_scripts(project: Project, config: LLMConfig, project_dir: str) -> Dict[int, str]:
     """Phase 2: 逐页生成讲解稿
 
     遍历每页 slide，调用 LLM 生成口语化讲解稿。
-    写入 scripts/slide_XX.txt 并自动回写 slide.script。
+    写入 scripts/slide_XX.txt，返回 {slide_id: script_text} dict。
+    由调用方负责将 script 持久化到 project.json。
     单页失败不影响其他页。
     """
     scripts_dir = os.path.join(project_dir, "scripts")
@@ -65,7 +65,7 @@ def generate_scripts(project: Project, config: LLMConfig, project_dir: str) -> L
         overview_json = json.dumps(project.overview, ensure_ascii=False)
 
     system_prompt = SCRIPT_SYSTEM_PROMPT.format(overview_json=overview_json)
-    saved_paths = []
+    scripts_map = {}
 
     for slide in project.slides:
         user_text = f"课程名称：{project.name}\n幻灯片内容：\n{slide.content}"
@@ -87,7 +87,6 @@ def generate_scripts(project: Project, config: LLMConfig, project_dir: str) -> L
             filepath = os.path.join(scripts_dir, filename)
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(script)
-            saved_paths.append(filepath)
-            slide.script = script
+            scripts_map[slide.id] = script
 
-    return saved_paths
+    return scripts_map
