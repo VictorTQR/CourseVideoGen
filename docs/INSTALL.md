@@ -47,7 +47,7 @@ pip install -r requirements.txt
 或者使用 uv（推荐，更快）：
 
 ```bash
-uv pip install -r requirements.txt
+uv sync
 ```
 
 ## 依赖说明
@@ -59,16 +59,27 @@ uv pip install -r requirements.txt
 | moviepy | <2.0 | 视频合成（2.x API 不兼容） |
 | Pillow | >=10.0.0 | 图像处理 |
 | numpy | >=1.24.0 | 数值计算 |
-| python-pptx | >=0.6.21 | PPTX 解析 |
+| python-pptx | >=0.6.21 | PPTX 文本提取 |
 | edge-tts | >=6.1.0 | 微软语音合成 |
 | mutagen | >=1.47.0 | 音频元数据读取 |
 
 ### 可选依赖
 
-| 包名 | 版本要求 | 说明 |
-|------|----------|------|
-| pywin32 | >=306 | Windows 平台，PPT 完美渲染 |
-| playwright | >=1.40 | HTML 幻灯片支持 |
+| 包名 | 说明 | 用途 |
+|------|------|------|
+| pywin32 | Windows 平台 | PPTX 完美渲染（推荐 Windows 用户安装） |
+| playwright | HTML 幻灯片支持 | 将 HTML 渲染为图片截图 |
+
+### 安装可选依赖
+
+```bash
+# Windows PPT 渲染（推荐）
+pip install pywin32
+
+# HTML 幻灯片截图
+pip install playwright
+playwright install chromium
+```
 
 ## 验证安装
 
@@ -94,9 +105,18 @@ A: 使用以下命令安装：
 pip install pywin32
 ```
 
+### Q: Playwright 截图报错？
+
+A: 需要同时安装浏览器：
+
+```bash
+pip install playwright
+playwright install chromium
+```
+
 ### Q: 如何使用 uv 替代 pip？
 
-A: 如果已安装 uv，可以使用：
+A: 如果已安装 uv，可以直接运行：
 
 ```bash
 uv sync
@@ -106,4 +126,4 @@ uv sync
 
 ## 下一步
 
-安装完成后，请查看 [README.md](./README.md) 了解如何使用 CourseVideoGen。
+安装完成后，请查看 [README.md](../README.md) 了解如何使用 CourseVideoGen。

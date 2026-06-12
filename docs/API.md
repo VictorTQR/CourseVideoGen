@@ -10,12 +10,12 @@ CourseVideoGen/
 ├── core/                    # 核心功能模块
 │   ├── project_manager.py  # 项目管理
 │   ├── ppt_parser.py       # PPT 解析
+│   ├── html_generator.py   # HTML 渲染为图片
 │   ├── audio_generator.py  # 音频生成
-│   ├── video_generator.py  # 视频合成
-│   └── html_generator.py   # HTML 幻灯片
+│   └── video_generator.py  # 视频合成
 ├── models/                  # 数据模型
 │   └── project.py          # Project 和 Slide 类
-└── templates/              # 自定义模板目录
+└── scripts/                 # 辅助脚本
 ```
 
 ## 核心模块
@@ -31,12 +31,11 @@ CourseVideoGen/
 | `create <name>` | 创建新项目 |
 | `load <name>` | 加载已有项目 |
 | `import-ppt <file>` | 导入 PPTX 文件 |
-| `import-html <file>` | 导入 HTML 幻灯片配置 |
+| `import-html <file>` | 导入 HTML 幻灯片文件（Playwright 截图） |
 | `generate-audio` | 生成音频 |
 | `generate-video` | 生成视频 |
 | `run-all` | 一键生成（音频+视频） |
 | `list` | 列出所有项目 |
-| `list-templates` | 列出可用模板 |
 
 ### core/project_manager.py - 项目管理
 
@@ -74,6 +73,22 @@ class PPTParser:
 2. 跨平台: LibreOffice
 3. 保底: 提取文本 + Pillow 生成占位图
 
+### core/html_generator.py - HTML 渲染
+
+使用 Playwright 将 HTML 幻灯片渲染为图片。
+
+> HTML 幻灯片文件由上游 CoursePPTGen 生成，本项目只负责渲染截图。
+
+**主要类：HTMLSlideRenderer**
+
+```python
+class HTMLSlideRenderer:
+    def __init__(self, project_dir: str)
+    def render_to_images(self, html_path: str) -> List[str]
+```
+
+**依赖：** 需要安装 `playwright` 并执行 `playwright install chromium`。
+
 ### core/audio_generator.py - 音频生成
 
 使用 Edge-TTS 生成讲解音频。
@@ -83,7 +98,7 @@ class PPTParser:
 ```python
 class AudioGenerator:
     def __init__(self, project_dir: str)
-    async def generate_audio(self, text: str, output_filename: str, 
+    async def generate_audio(self, text: str, output_filename: str,
                              voice: str = "zh-CN-XiaoxiaoNeural",
                              rate: str = "+0%") -> Tuple[str, float]
     def _get_audio_duration(self, audio_path: str) -> float
@@ -116,14 +131,6 @@ class VideoGenerator:
     def generate_final_video(self, slides: List[Slide], output_path: str) -> str
 ```
 
-### core/html_generator.py - HTML 幻灯片
-
-生成和渲染 HTML 幻灯片。
-
-**主要类：**
-- `HTMLSlideGenerator`: 从 JSON 生成 HTML
-- `HTMLSlideRenderer`: 将 HTML 渲染为图片
-
 ## 数据模型
 
 ### models/project.py
@@ -154,7 +161,6 @@ workspace/
 └── <项目名>/
     ├── project.json      # 项目元数据
     ├── slides/          # 幻灯片图片（PNG）
-    ├── html/            # HTML 源文件（如果使用 HTML 模式）
     ├── scripts/         # 讲解稿文本
     ├── audios/          # 生成的音频（MP3）
     └── output.mp4       # 最终视频
@@ -186,7 +192,7 @@ workspace/
 修复已有项目的音频时长问题。
 
 ```bash
-python fix_duration.py "项目名称"
+python scripts/fix_duration.py "项目名称"
 ```
 
 此脚本会重新读取所有音频文件的实际时长并更新 project.json。
@@ -196,13 +202,6 @@ python fix_duration.py "项目名称"
 ### 添加新的发音人
 
 在 `core/audio_generator.py` 的 `list_voices()` 方法中添加新的发音人 ID。
-
-### 添加新的模板
-
-在 `templates/` 目录下创建三个文件：
-- `templatename.html` - 主模板
-- `_templatename_slide.html` - 单页模板
-- `templatename.json` - 颜色配置
 
 ### 自定义视频渲染
 

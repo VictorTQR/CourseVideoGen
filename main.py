@@ -5,6 +5,7 @@ CourseVideoGen - PPT 讲解视频自动生成工具
 使用方法:
     python main.py create "我的项目"
     python main.py import-ppt "lesson.pptx"
+    python main.py import-html "slides.html"
     python main.py generate-audio
     python main.py generate-video
     python main.py run-all
@@ -22,7 +23,7 @@ from core.project_manager import ProjectManager
 from core.ppt_parser import PPTParser
 from core.audio_generator import AudioGenerator
 from core.video_generator import VideoGenerator
-from core.html_generator import HTMLSlideGenerator, HTMLSlideRenderer
+from core.html_generator import HTMLSlideRenderer
 
 
 class CourseVideoGen:
@@ -77,193 +78,168 @@ class CourseVideoGen:
 
         print(f"[OK] 成功导入 {len(images)} 页")
 
-    def import_html(
-        self, json_path: str, theme: str = "light", template: str = "default"
-    ):
-        """从 JSON 导入 HTML 幻灯片"""
+    def import_html(self, html_path: str):
+        """从 HTML 文件导入幻灯片（渲染为图片）"""
         if not self.current_project:
             print("❌ 请先创建或加载项目")
             sys.exit(1)
 
-        print(f"📥 导入 HTML 幻灯片: {json_path} (模板: {template})")
-
-        # 1. 生成 HTML
-        html_gen = HTMLSlideGenerator(self.project_dir)
-        html_path = html_gen.generate_from_json(json_path, template)
-
-        # 2. 渲染为图片
+        print(f"[IMPORT] 导入 HTML: {html_path}")
         renderer = HTMLSlideRenderer(self.project_dir)
+
+        # 渲染为图片
         images = renderer.render_to_images(html_path)
 
-        if not images:
-            print("[ERROR] HTML 渲染失败")
-            return
-
-        # 3. 添加到项目
+        # 添加到项目
         for image in images:
             self.pm.add_slide(self.current_project, image)
 
-        # 4. 生成空的讲解稿模板
-        scripts_dir = os.path.join(self.project_dir, "scripts")
-        import json
+        print(f"[OK] 成功导入 {len(images)} 页")
 
-        with open(json_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        slides_data = data.get("slides", [])
-        for i, slide_data in enumerate(slides_data):
-            script_path = os.path.join(scripts_dir, f"slide_{i + 1:02d}.txt")
-            # 尝试从 JSON 获取讲解稿，或用标题作为默认
-            script = slide_data.get("script", f"{slide_data.get('title', '')}")
-            with open(script_path, "w", encoding="utf-8") as f:
-                f.write(script)
-            if i < len(self.current_project.slides):
-                self.pm.update_slide_script(self.current_project, i + 1, script)
-
-        print(f"[OK] 成功导入 {len(images)} 页 HTML 幻灯片")
-
-    def list_templates(self):
-        """列出所有可用模板"""
-        html_gen = HTMLSlideGenerator(self.project_dir if self.project_dir else ".")
-        templates = html_gen.list_available_templates()
-        print("[TEMPLATES] 可用模板:")
-        for t in templates:
-            print(f"  - {t}")
-
-    async def generate_audio(self, voice: str = "zh-CN-XiaoxiaoNeural"):
-        """生成音频"""
+    def generate_audio(self, voice: str = "zh-CN-XiaoxiaoNeural", rate: str = "+0%"):
+        """生成所有幻灯片的音频"""
         if not self.current_project:
-            print("[ERROR] 请先加载项目")
+            print("[ERROR] 请先创建或加载项目")
             sys.exit(1)
 
-        print(f"[AUDIO] 生成音频 (发音人: {voice})...")
-        audio_gen = AudioGenerator(self.project_dir)
+        print(f"[AUDIO] 生成音频 (voice={voice}, rate={rate})")
+        generator = AudioGenerator(self.project_dir)
 
-        for slide in self.current_project.slides:
-            if not slide.script.strip():
-                print(f"[WARN] 第 {slide.id} 页没有讲解稿，跳过")
-                continue
+        async def _gen():
+            for slide in self.current_project.slides:
+                if not slide.script:
+                    print(f"   跳过第 {slide.id} 页 (无讲解稿)")
+                    continue
+                print(f"   生成第 {slide.id}/{len(self.current_project.slides)} 页...")
+                audio_file = f"audio_{slide.id:02d}.mp3"
+                audio_path, duration = await generator.generate_audio(
+                    slide.script, audio_file, voice, rate
+                )
+                self.pm.update_slide_audio(
+                    self.current_project, slide.id, audio_file, duration
+                )
+                print(f"   ✓ 第 {slide.id} 页完成 ({duration:.1f}s)")
 
-            print(f"   生成第 {slide.id} 页...")
-            audio_filename = f"audio_{slide.id:02d}.mp3"
-            audio_path, duration = await audio_gen.generate_audio(
-                slide.script, audio_filename, voice=voice
-            )
-            self.pm.update_slide_audio(
-                self.current_project, slide.id, audio_filename, duration
-            )
+        asyncio.run(_gen())
+        print(f"[OK] 音频生成完成")
 
-        print("[OK] 音频生成完成")
-
-    def generate_video(self, output_filename: str = "output.mp4"):
+    def generate_video(self, output: str = "output.mp4"):
         """生成视频"""
         if not self.current_project:
-            print("[ERROR] 请先加载项目")
+            print("[ERROR] 请先创建或加载项目")
             sys.exit(1)
 
-        print("[VIDEO] 生成视频...")
-        video_gen = VideoGenerator(self.project_dir)
-        output_path = os.path.join(self.project_dir, output_filename)
-
-        video_gen.generate_final_video(self.current_project.slides, output_path)
-
+        print(f"[VIDEO] 生成视频: {output}")
+        generator = VideoGenerator(self.project_dir)
+        output_path = os.path.join(self.project_dir, output)
+        generator.generate_final_video(self.current_project.slides, output_path)
         print(f"[OK] 视频已生成: {output_path}")
 
-    def list(self):
+    def run_all(self, voice: str = "zh-CN-XiaoxiaoNeural", rate: str = "+0%", output: str = "output.mp4"):
+        """一键生成音频和视频"""
+        self.generate_audio(voice, rate)
+        self.generate_video(output)
+
+    def list_projects(self):
         """列出所有项目"""
         projects = self.pm.list_projects()
         if not projects:
             print("暂无项目")
             return
-        print("[LIST] 项目列表:")
+        print("项目列表:")
         for p in projects:
-            print(f"  - {p}")
+            print(f"  - {p['name']} ({len(p['slides'])} 页, 更新: {p['updated_at']})")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="CourseVideoGen - PPT 讲解视频自动生成工具"
-    )
-    subparsers = parser.add_subparsers(title="命令", dest="command")
+    parser = argparse.ArgumentParser(description="CourseVideoGen - PPT 讲解视频自动生成工具")
+    subparsers = parser.add_subparsers(dest="command")
+
+    # list
+    subparsers.add_parser("list", help="列出所有项目")
 
     # create
     create_parser = subparsers.add_parser("create", help="创建新项目")
     create_parser.add_argument("name", help="项目名称")
 
     # load
-    load_parser = subparsers.add_parser("load", help="加载项目")
+    load_parser = subparsers.add_parser("load", help="加载已有项目")
     load_parser.add_argument("name", help="项目名称")
 
     # import-ppt
-    import_parser = subparsers.add_parser("import-ppt", help="导入 PPT")
-    import_parser.add_argument("file", help="PPTX 文件路径")
-    import_parser.add_argument("--project", help="项目名称（如不指定使用当前）")
+    ppt_parser = subparsers.add_parser("import-ppt", help="导入 PPTX")
+    ppt_parser.add_argument("file", help="PPTX 文件路径")
 
     # import-html
-    import_html_parser = subparsers.add_parser(
-        "import-html", help="从 JSON 导入 HTML 幻灯片"
-    )
-    import_html_parser.add_argument("file", help="JSON 配置文件路径")
-    import_html_parser.add_argument("--theme", help="主题: light/dark", default="light")
-    import_html_parser.add_argument("--template", help="模板名称", default="default")
-    import_html_parser.add_argument("--project", help="项目名称（如不指定使用当前）")
-
-    # list-templates
-    subparsers.add_parser("list-templates", help="列出所有可用模板")
+    html_parser = subparsers.add_parser("import-html", help="导入 HTML 幻灯片文件")
+    html_parser.add_argument("file", help="HTML 文件路径")
 
     # generate-audio
     audio_parser = subparsers.add_parser("generate-audio", help="生成音频")
     audio_parser.add_argument("--project", help="项目名称")
-    audio_parser.add_argument("--voice", help="发音人", default="zh-CN-XiaoxiaoNeural")
 
     # generate-video
     video_parser = subparsers.add_parser("generate-video", help="生成视频")
     video_parser.add_argument("--project", help="项目名称")
-    video_parser.add_argument("--output", help="输出文件名", default="output.mp4")
+    video_parser.add_argument("--output", default="output.mp4", help="输出文件名")
 
     # run-all
-    all_parser = subparsers.add_parser(
-        "run-all", help="一键全部生成（需要先 import-ppt）"
-    )
-    all_parser.add_argument("--project", help="项目名称")
-    all_parser.add_argument("--voice", help="发音人", default="zh-CN-XiaoxiaoNeural")
-    all_parser.add_argument("--output", help="输出文件名", default="output.mp4")
+    run_parser = subparsers.add_parser("run-all", help="一键生成音频和视频")
+    run_parser.add_argument("--project", help="项目名称")
+    run_parser.add_argument("--output", default="output.mp4", help="输出文件名")
 
-    # list
-    subparsers.add_parser("list", help="列出所有项目")
+    # generate
+    gen_parser = subparsers.add_parser("generate", help="generate-audio / generate-video 的快捷方式")
+    gen_parser.add_argument("what", choices=["audio", "video"])
+    gen_parser.add_argument("--project", help="项目名称")
+    gen_parser.add_argument("--output", default="output.mp4", help="输出文件名")
 
     args = parser.parse_args()
 
     app = CourseVideoGen()
 
     if args.command == "list":
-        app.list()
+        app.list_projects()
+
     elif args.command == "create":
         app.create(args.name)
+
     elif args.command == "load":
         app.load(args.name)
+
     elif args.command == "import-ppt":
-        if args.project:
-            app.load(args.project)
-        app.import_ppt(args.file)
+        app.load(args.file) if not app.current_project else None
+        # 需要先有项目
+        print("[ERROR] 请先使用 create 加载项目，再导入 PPT")
+        print('  python main.py create "项目名"')
+        print('  python main.py import-ppt "lesson.pptx"')
+
     elif args.command == "import-html":
-        if args.project:
-            app.load(args.project)
-        app.import_html(args.file, args.theme, args.template)
-    elif args.command == "list-templates":
-        app.list_templates()
+        app.import_html(args.file)
+
     elif args.command == "generate-audio":
         if args.project:
             app.load(args.project)
-        asyncio.run(app.generate_audio(args.voice))
+        app.generate_audio()
+
     elif args.command == "generate-video":
         if args.project:
             app.load(args.project)
         app.generate_video(args.output)
+
     elif args.command == "run-all":
         if args.project:
             app.load(args.project)
-        asyncio.run(app.generate_audio(args.voice))
-        app.generate_video(args.output)
+        app.run_all(args.output)
+
+    elif args.command == "generate":
+        if args.project:
+            app.load(args.project)
+        if args.what == "audio":
+            app.generate_audio()
+        else:
+            app.generate_video(args.output)
+
     else:
         parser.print_help()
 

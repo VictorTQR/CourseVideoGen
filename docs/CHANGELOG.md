@@ -7,11 +7,22 @@
 
 ## [未发布]
 
+### 移除
+- 移除 HTML 幻灯片生成能力（JSON → HTML），由上游 CoursePPTGen 负责
+- 移除 `HTMLSlideGenerator` 类和 `BUILTIN_TEMPLATES` 内置模板
+- 移除 `templates/` 目录（chemistry / custom 模板）
+- 移除 `examples/` 目录（示例 JSON 文件）
+- 移除 `import-html` 的 JSON 导入模式、`--template` / `--theme` 选项
+- 移除 `list-templates` 命令
+- 移除 `tests/test_template.py`
+
 ### 新增
+- `import-html` 改为直接接收 HTML 文件（Playwright 截图渲染）
 - 创建 docs 目录，整理项目文档
-- 新增 INSTALL.md - 详细安装指南
-- 新增 API.md - API 参考文档
-- 新增 CHANGELOG.md - 变更日志
+
+### 变更
+- `core/html_generator.py` 精简为仅包含 `HTMLSlideRenderer`
+- 项目定位明确为下游工具：接收图片（来自 PPTX/HTML）→ TTS → 视频
 
 ## [0.1.1] - 2026-04-27
 
@@ -36,7 +47,7 @@
 ### 新增
 - 初始版本发布
 - PPTX 解析为图片功能
-- HTML 幻灯片支持
+- HTML 幻灯片生成与渲染
 - Edge-TTS 语音合成
 - 视频合成功能
 - 项目管理功能
