@@ -12,9 +12,10 @@ class Slide:
     """单页 PPT 数据"""
     id: int
     image: str  # 图片文件名
-    script: str = ""  # 讲解稿
+    content: str = ""  # 原始 PPT/HTML 文本
+    script: Optional[str] = None  # LLM 生成的讲解稿
     audio: Optional[str] = None  # 音频文件名
-    duration: float = 3.0  # 显示时长（秒）
+    duration: Optional[float] = None  # 显示时长（秒）
 
 
 @dataclass
@@ -24,22 +25,32 @@ class Project:
     slides: List[Slide]
     created_at: str = ""
     updated_at: str = ""
+    overview: Optional[Dict] = None
 
     def to_dict(self) -> Dict:
-        return {
+        result = {
             "name": self.name,
             "slides": [asdict(slide) for slide in self.slides],
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }
+        if self.overview is not None:
+            result["overview"] = self.overview
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict) -> "Project":
-        slides = [Slide(**s) for s in data["slides"]]
+        slides = []
+        for s in data["slides"]:
+            if "content" not in s and "script" in s:
+                s["content"] = s["script"]
+                s["script"] = None
+            slides.append(Slide(**s))
         return cls(
             name=data["name"],
             slides=slides,
             created_at=data.get("created_at", ""),
-            updated_at=data.get("updated_at", "")
+            updated_at=data.get("updated_at", ""),
+            overview=data.get("overview")
         )
 
