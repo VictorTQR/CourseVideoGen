@@ -59,7 +59,7 @@ class AudioGenerator:
             except Exception as e2:
                 print(f"[WARN] moviepy 也失败: {e2}")
                 # 估算：大概每秒 5 个汉字
-                return 3.0
+                return 1.0
 
     @staticmethod
     def list_voices() -> list:
