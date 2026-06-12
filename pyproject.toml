@@ -15,7 +15,13 @@ dependencies = [
     "pytest>=9.0.3",
     "openai>=2.41.1",
     "playwright>=1.60.0",
+    "loguru>=0.7.3",
+    "typer>=0.15.0",
+    "python-dotenv>=1.0.0",
 ]
+
+[project.scripts]
+cvg = "main:app"
 
 [project.optional-dependencies]
 llm = ["openai>=1.0.0"]
