@@ -123,7 +123,7 @@ class VideoGenerator:
                             f"[INFO] 第 {slide.id} 页: 使用实际音频时长 {duration:.2f} 秒"
                         )
                     except Exception as e:
-                        print(f"[WARN] 第 {slide.id} 页: 获取时长失败，使用默认值")
+                        print(f"[WARN] 第 {slide.id} 页: 获取音频时长失败，使用幻灯片时长 {duration:.2f} 秒")
 
             clip = ImageClip(image_path).set_duration(duration)
             clips.append(clip)
