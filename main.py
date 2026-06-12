@@ -84,6 +84,9 @@ def import_ppt(
     proj, project_dir = _require_project(project)
     parser = PPTParser(project_dir)
 
+    # 重置项目（清空旧数据）
+    pm.reset_project(proj)
+
     images = parser.ppt_to_images(file)
     for image in images:
         pm.add_slide(proj, image)
@@ -105,6 +108,9 @@ def import_html(
     logger.info(f"导入 HTML: {file}")
     proj, project_dir = _require_project(project)
     renderer = HTMLSlideRenderer(project_dir)
+
+    # 重置项目（清空旧数据）
+    pm.reset_project(proj)
 
     images_and_texts = renderer.render_to_images(file)
     for image_filename, text_content in images_and_texts:

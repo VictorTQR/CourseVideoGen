@@ -3,6 +3,7 @@
 """
 import os
 import json
+import shutil
 from datetime import datetime
 from typing import Optional
 from models.project import Project, Slide
@@ -43,6 +44,27 @@ class ProjectManager:
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return Project.from_dict(data)
+
+    def reset_project(self, project: Project):
+        """重置项目数据（重新导入前调用）
+
+        清空 slides/scripts/audios 目录和 output.mp4，
+        重置 project.json 中的 slides 和 overview，
+        保留 name、created_at。
+        """
+        project_path = self.get_project_path(project.name)
+        for subdir in ("slides", "scripts", "audios"):
+            dir_path = os.path.join(project_path, subdir)
+            if os.path.exists(dir_path):
+                shutil.rmtree(dir_path)
+            os.makedirs(dir_path)
+        output_path = os.path.join(project_path, "output.mp4")
+        if os.path.exists(output_path):
+            os.remove(output_path)
+
+        project.slides = []
+        project.overview = None
+        self._save_project(project)
 
     def _save_project(self, project: Project):
         """保存项目到文件"""
