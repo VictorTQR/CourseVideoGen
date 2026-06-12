@@ -229,6 +229,11 @@ def main():
         app.import_ppt(args.file)
 
     elif args.command == "import-html":
+        if not app.current_project:
+            print("[ERROR] 请先使用 create 加载项目，再导入 HTML")
+            print('  python main.py create "项目名"')
+            print('  python main.py import-html "slides.html"')
+            sys.exit(1)
         app.import_html(args.file)
 
     elif args.command == "generate-audio":
@@ -285,6 +290,9 @@ def main():
                 sys.exit(1)
             import glob
             txt_files = sorted(glob.glob(os.path.join(scripts_dir, "slide_*.txt")))
+            if not txt_files:
+                print("[ERROR] scripts 目录为空，请先运行 script generate")
+                sys.exit(1)
             applied = 0
             for txt_path in txt_files:
                 basename = os.path.basename(txt_path)
