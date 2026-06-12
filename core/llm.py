@@ -40,7 +40,7 @@ def resolve_llm_config(
 def extract_json(text: str) -> dict:
     """从 LLM 响应中提取 JSON。支持 3 种情况：纯 JSON、code block 包裹、纯文本中嵌 JSON。"""
     stripped = text.strip()
-    fence_match = re.search(r"```(?:json)?\s*\n(.*?)\n```", stripped, re.DOTALL)
+    fence_match = re.search(r"```(?:json)?\s*(.*?)\s*```", stripped, re.DOTALL)
     if fence_match:
         stripped = fence_match.group(1).strip()
     try:
